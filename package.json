@@ -1,5 +1,5 @@
 {
-  "name": "zkSync-deploy-helper",
+  "name": "zksync-deploy-helper",
   "version": "0.1.0",
   "description": "Smart contract deployment helper library for hardhat-zksync-deploy",
   "main": "index.js",

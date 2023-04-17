@@ -1,4 +1,3 @@
-// require("hardhat/config");
 require('@matterlabs/hardhat-zksync-deploy');
 const { deployUtils } = require('./src/deployUtils');
 const { TASK_DEPLOY_ZKSYNC } = require('@matterlabs/hardhat-zksync-deploy/dist/task-names');
