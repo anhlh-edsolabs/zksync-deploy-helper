@@ -1,0 +1,38 @@
+{
+  "name": "zkSync-deploy-helper",
+  "version": "0.1.0",
+  "description": "Smart contract deployment helper library for hardhat-zksync-deploy",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anhlh-edsolabs/zksync-deploy-helper.git"
+  },
+  "author": "Le Hoang Anh",
+  "license": "MIT",
+  "scripts": {
+    "test": "echo \"No test script is defined\" && exit 1"
+  },
+  "keywords": [
+    "zkSync"
+  ],
+  "prettier": {
+    "tabWidth": 4,
+    "printWidth": 100,
+    "parser": "meriyah",
+    "singleQuote": true,
+    "bracketSpacing": true
+  },
+  "dependencies": {
+    "@matterlabs/hardhat-zksync-deploy": "^0.6.3",
+    "dotenv": "^16.0.3",
+    "zksync-web3": "^0.14.3"
+  },
+  "devDependencies": {
+    "@ethersproject/hash": "^5.7.0",
+    "@ethersproject/web": "^5.7.1",
+    "@matterlabs/hardhat-zksync-solc": "^0.3.16",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.13.1",
+    "jest": "^29.5.0"
+  }
+}
