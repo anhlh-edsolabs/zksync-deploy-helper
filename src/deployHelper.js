@@ -31,8 +31,6 @@ class deployHelper {
 
         await this._printPreparationInfo(this.helperObject);
 
-        // let { dataFilePath, deploymentInfo } = this._prepareDataFile(this.helperObject);
-
         this.helperObject._contractDeployment = await this._deployImpl();
 
         if (this.helperObject.isUpgradeable) {

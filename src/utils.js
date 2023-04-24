@@ -96,9 +96,9 @@ async function writeDeploymentResult(helperObject) {
 
     try {
         await fs.promises.writeFile(dataFilePath, JSON.stringify(deploymentInfo, null, '\t'));
-        log(`Information has been written to ${dataFilePath}!`);
+        log(`Information has been written to ${dataFilePath}!\n\r`);
     } catch (err) {
-        log(`Error when trying to write to ${dataFilePath}!`, err);
+        log(`Error when trying to write to ${dataFilePath}!\n\r`, err);
     }
 }
 
