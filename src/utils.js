@@ -82,14 +82,17 @@ async function printDeploymentResult(helperObject) {
 }
 
 async function writeDeploymentResult(helperObject) {
-    deploymentInfo[helperObject.envKey] = {
-        [helperObject.contractKey]: {
-            ChainID: helperObject.chainId,
-            Proxy: helperObject.isUpgradeable ? helperObject._proxyDeployment.address : null,
-            Impl: helperObject._contractDeployment.address,
-            InitializationArgs: helperObject.initializationArgs,
-        },
-    };
+    deploymentInfo[helperObject.envKey] =
+        deploymentInfo[helperObject.envKey] !== undefined
+            ? deploymentInfo[helperObject.envKey]
+            : {};
+    
+    deploymentInfo[helperObject.envKey][helperObject.contractKey] = {
+        ChainID: helperObject.chainId,
+        Proxy: helperObject.isUpgradeable ? helperObject._proxyDeployment.address : null,
+        Impl: helperObject._contractDeployment.address,
+        InitializationArgs: helperObject.initializationArgs,
+    }
 
     try {
         await fs.promises.writeFile(dataFilePath, JSON.stringify(deploymentInfo, null, '\t'));
@@ -97,6 +100,6 @@ async function writeDeploymentResult(helperObject) {
     } catch (err) {
         log(`Error when trying to write to ${dataFilePath}!`, err);
     }
-};
+}
 
 module.exports = { printPreparationInfo, printDeploymentResult, writeDeploymentResult };

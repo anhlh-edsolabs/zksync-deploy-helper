@@ -27,7 +27,7 @@ class deployHelper {
     };
 
     deploy = async (hre) => {
-        this.helperObject.chainId = await this.helperObject.zkDeployer.hre.getChainId();
+        this.helperObject.chainId = (await this.helperObject.zkDeployer.zkWallet.provider.getNetwork()).chainId;
 
         await this._printPreparationInfo(this.helperObject);
 
