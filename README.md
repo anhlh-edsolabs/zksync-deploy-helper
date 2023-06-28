@@ -53,7 +53,7 @@ const zksync = require("zksync-web3");
 module.exports = async () => {
     const ENV_KEY = process.env.DEPLOYMENT_ENV;
     const SIGNER_PK = process.env.ZKSYNC_DEPLOYER_PK;
-    const CONTRACT_NAME = ContractNames.ERC20Factory;
+    const CONTRACT_NAME = "ERC20Factory";
 
     const ERC20Artifact = await hre.artifacts.readArtifact("ERC20");
 
