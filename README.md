@@ -4,7 +4,7 @@
 
 The purpose of this plugin is to simplify the smart contract deployment on `zkSync` layer 2 network by wrapping the `Deployer` object from `@matterlabs/hardhat-zksync-deploy`. Additionally, it export the deployment data to an external file, grouping by deployment environment keys `ENV_KEY: (DEV/STG/UAT/PRD)` for better contract management.  
 
-## Breaking changes 
+## Breaking changes
 
 ### v2.0.0
 
