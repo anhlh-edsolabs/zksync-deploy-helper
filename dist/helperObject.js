@@ -44,6 +44,8 @@ class HelperObject {
         const { deployer, wallet } = this.createDeployer(hre, signerPK);
         this.zkDeployer = deployer;
         this.zkWallet = wallet;
+        this.zkUpgrader = hre.zkUpgrades;
     }
 }
 exports.HelperObject = HelperObject;
+//# sourceMappingURL=helperObject.js.map

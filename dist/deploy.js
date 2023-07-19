@@ -22,32 +22,42 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deployContract = void 0;
 const ethers = __importStar(require("ethers"));
+require("@matterlabs/hardhat-zksync-upgradable");
 const chalk_1 = __importDefault(require("chalk"));
 const console_1 = require("console");
-function deployContract(helperObject, constructorArgs = [], isProxy = false) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const artifact = isProxy
-            ? yield helperObject.zkDeployer.loadArtifact(helperObject.proxyName)
-            : yield helperObject.zkDeployer.loadArtifact(helperObject.contractName);
-        const deploymentFee = yield helperObject.zkDeployer.estimateDeployFee(artifact, constructorArgs);
-        const parsedFee = ethers.utils.formatEther(deploymentFee.toString());
-        (0, console_1.log)(`Deploying ${isProxy ? "proxy contract" : chalk_1.default.bold.blue(artifact.contractName)} with estimated cost ${chalk_1.default.bold.yellowBright(parsedFee)}...`);
-        return yield helperObject.zkDeployer.deploy(artifact, constructorArgs, helperObject.overrides, helperObject.additionalFactoryDeps);
-    });
+async function deployContract(helperObject, constructorArgs = [], isUpgradeable = false) {
+    const proxyType = { kind: "uups" };
+    // const artifact = isUpgradeable
+    // 	? await helperObject.zkDeployer.loadArtifact(helperObject.proxyName!)
+    // 	: await helperObject.zkDeployer.loadArtifact(helperObject.contractName);
+    const artifact = await helperObject.zkDeployer.loadArtifact(helperObject.contractName);
+    let deploymentFee, contractDeployment;
+    if (isUpgradeable) {
+        deploymentFee =
+            await helperObject.zkUpgrader.estimation.estimateGasProxy(helperObject.zkDeployer, artifact, constructorArgs, proxyType);
+        contractDeployment = await helperObject.zkUpgrader.deployProxy(helperObject.zkWallet, artifact, constructorArgs, proxyType, true);
+    }
+    else {
+        deploymentFee = await helperObject.zkDeployer.estimateDeployFee(artifact, constructorArgs);
+        contractDeployment = await helperObject.zkDeployer.deploy(artifact, constructorArgs, helperObject.overrides, helperObject.additionalFactoryDeps);
+    }
+    const parsedFee = ethers.utils.formatEther(deploymentFee.toString());
+    (0, console_1.log)(`Deploying ${isUpgradeable
+        ? "proxy contract"
+        : chalk_1.default.bold.blue(artifact.contractName)} with estimated cost ${chalk_1.default.bold.yellowBright(parsedFee)}...`);
+    // return await helperObject.zkDeployer.deploy(
+    // 	artifact,
+    // 	constructorArgs,
+    // 	helperObject.overrides,
+    // 	helperObject.additionalFactoryDeps
+    // );
+    return await contractDeployment.deployed();
 }
 exports.deployContract = deployContract;
+//# sourceMappingURL=deploy.js.map

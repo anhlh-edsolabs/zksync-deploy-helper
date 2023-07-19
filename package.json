@@ -44,10 +44,18 @@
     "@ethersproject/hash": "^5.7.0",
     "@ethersproject/web": "^5.7.1",
     "@matterlabs/hardhat-zksync-solc": "^0.3.16",
+    "@matterlabs/hardhat-zksync-upgradable": "^0.1.2",
+    "@openzeppelin/contracts": "^4.9.2",
+    "@openzeppelin/contracts-upgradeable": "^4.9.2",
+    "@openzeppelin/hardhat-upgrades": "1.28.0",
+    "@openzeppelin/upgrades-core": "1.20.6",
+    "@types/debug": "^4.1.8",
+    "@types/proper-lockfile": "^4.1.2",
     "chalk": "4.1.2",
     "ethers": "^5.7.2",
     "hardhat": "^2.13.1",
     "prettier": "2.8.8",
+    "solidity-ast": "0.4.26",
     "ts-node": "^10.9.1"
   }
 }

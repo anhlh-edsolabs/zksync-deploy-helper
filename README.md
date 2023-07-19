@@ -18,7 +18,7 @@ The purpose of this plugin is to simplify the smart contract deployment on `zkSy
 
 ```Javascript
 require("dotenv").config();
-const { deployHelper } = require("zksync-deploy-helper");
+const { DeployHelper } = require("zksync-deploy-helper");
 
 module.exports = async () => {
     const ENV_KEY = process.env.DEPLOYMENT_ENV;
@@ -28,7 +28,7 @@ module.exports = async () => {
     // Contract's constructor arguments
     const CONSTRUCTOR_ARGS = ["MyToken", "MTK"];
 
-    const helper = new deployHelper(
+    const helper = new DeployHelper(
         ENV_KEY,
         hre,
         CONTRACT_NAME,
@@ -46,7 +46,6 @@ module.exports = async () => {
 
 ```Javascript
 require("dotenv").config();
-const hre = require("hardhat");
 const { DeployHelper } = require("zksync-deploy-helper");
 const zksync = require("zksync-web3");
 

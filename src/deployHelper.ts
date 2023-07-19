@@ -1,11 +1,14 @@
+import * as zk from "zksync-web3";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { HelperObject } from "./helperObject";
+import { HelperObject, HelperObjectOptions, DeploymentAddresses } from "./helperObject";
 import { deployContract } from "./deploy";
 import {
 	printPreparationInfo,
 	printDeploymentResult,
 	writeDeploymentResult,
+	getImplementationAddress,
 } from "./utils";
+
 
 export class DeployHelper {
 	private _helperObject: HelperObject;
@@ -14,17 +17,11 @@ export class DeployHelper {
 	) => Promise<void>;
 	private _printDeploymentResult: (
 		helperObject: HelperObject,
-		addresses: {
-			proxyDeploymentAddress: string;
-			contractDeploymentAddress: string;
-		}
+		addresses: DeploymentAddresses
 	) => Promise<void>;
 	private _writeDeploymentResult: (
 		helperObject: HelperObject,
-		addresses: {
-			proxyDeploymentAddress: string;
-			contractDeploymentAddress: string;
-		}
+		addresses: DeploymentAddresses
 	) => Promise<void>;
 
 	constructor(
@@ -32,7 +29,7 @@ export class DeployHelper {
 		hre: HardhatRuntimeEnvironment,
 		contractName: string,
 		signerPk: string,
-		options?: any
+		options?: HelperObjectOptions
 	) {
 		this._helperObject = new HelperObject(
 			envKey,
@@ -50,48 +47,89 @@ export class DeployHelper {
 	deploy = async () => {
 		await this._printPreparationInfo(this._helperObject);
 
-		let contractDeployment = await this._deployImpl();
-
-		let addresses = {
-			proxyDeploymentAddress: "",
-			contractDeploymentAddress: contractDeployment.address,
-		};
+		/** TODO: use deploy proxy */
+		let contractDeployment: zk.Contract;
+		let deploymentAddresses: DeploymentAddresses;
 
 		if (this._helperObject.isUpgradeable) {
-			// Deploy UUPS proxy
-			const callData = contractDeployment.interface.encodeFunctionData(
-				"initialize",
+			contractDeployment = await deployContract(
+				this._helperObject,
+				this._helperObject.initializationArgs,
+				true
+			);
+
+			deploymentAddresses = {
+				proxy: contractDeployment.address,
+				implementation: await getImplementationAddress(
+					this._helperObject.zkWallet.provider,
+					contractDeployment.address
+				),
+			};
+		} else {
+			contractDeployment = await deployContract(
+				this._helperObject,
 				this._helperObject.initializationArgs
 			);
-			const proxyDeployment = await this._deployProxy(
-				contractDeployment.address,
-				callData
-			);
-
-			addresses.proxyDeploymentAddress = proxyDeployment.address;
+			deploymentAddresses = {
+				implementation: contractDeployment.address,
+			};
 		}
 
-		await this._printDeploymentResult(this._helperObject, addresses);
+		// let contractDeployment = await this._deployImpl();
+
+		// let addresses = {
+		// 	proxyDeploymentAddress: "",
+		// 	contractDeploymentAddress: contractDeployment.address,
+		// };
+
+		// if (this._helperObject.isUpgradeable) {
+		// 	// Deploy UUPS proxy
+		// 	const callData = contractDeployment.interface.encodeFunctionData(
+		// 		"initialize",
+		// 		this._helperObject.initializationArgs
+		// 	);
+		// 	const proxyDeployment = await this._deployProxy(
+		// 		contractDeployment.address,
+		// 		callData
+		// 	);
+
+		// 	addresses.proxyDeploymentAddress = proxyDeployment.address;
+		// }
+
+		await this._printDeploymentResult(
+			this._helperObject,
+			deploymentAddresses
+		);
 
 		// Write the result to deployment data file
-		await this._writeDeploymentResult(this._helperObject, addresses);
-	};
-
-	private _deployImpl = async () => {
-		// Deploy this contract. The returned object will be of a `Contract` type, similarly to ones in `ethers`.
-		return await deployContract(
+		await this._writeDeploymentResult(
 			this._helperObject,
-			this._helperObject.initializationArgs,
-			false
+			deploymentAddresses
 		);
 	};
 
-	private _deployProxy = async (implAddress: string, callData: string) => {
-		// Deploy the proxy contract with implementation address and call data as constructor arguments
-		return await deployContract(
-			this._helperObject,
-			[implAddress, callData],
-			true
-		);
-	};
+	// private _deployImpl = async (): Promise<zk.Contract> => {
+	// 	// Deploy this contract. The returned object will be of a `Contract` type, similarly to ones in `ethers`.
+	// 	return await deployContract(
+	// 		this._helperObject,
+	// 		this._helperObject.initializationArgs
+	// 	);
+	// };
+
+	// private _deployProxy = async (implAddress: string, callData: string): Promise<zk.Contract> => {
+	// 	// Deploy the proxy contract with implementation address and call data as constructor arguments
+	// 	return await deployContract(
+	// 		this._helperObject,
+	// 		[implAddress, callData],
+	// 		true
+	// 	);
+	// };
+
+	// private _deployProxy = async (): Promise<zk.Contract> => {
+	// 	return await deployContract(
+	// 		this._helperObject,
+	// 		this._helperObject.initializationArgs,
+	// 		true
+	// 	);
+	// };
 }

@@ -1,9 +1,14 @@
 import { ethers } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { HardhatUpgrades } from '@matterlabs/hardhat-zksync-upgradable/src/interfaces';
 import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
 import * as zk from "zksync-web3";
 
-interface HelperObjectOptions {
+export interface DeploymentAddresses {
+	proxy?: string;
+	implementation: string;
+}
+export interface HelperObjectOptions {
 	initializationArgs?: any[];
 	isUpgradeable?: boolean;
 	proxyName?: string;
@@ -21,6 +26,7 @@ export class HelperObject {
 	additionalFactoryDeps?: ethers.BytesLike[];
 	zkDeployer: Deployer;
 	zkWallet: zk.Wallet;
+	zkUpgrader: HardhatUpgrades;
 
 	constructor(
 		envKey: string,
@@ -48,6 +54,7 @@ export class HelperObject {
 		const { deployer, wallet } = this.createDeployer(hre, signerPK);
 		this.zkDeployer = deployer;
 		this.zkWallet = wallet;
+		this.zkUpgrader = hre.zkUpgrades;
 	}
 
 	private createDeployer = (

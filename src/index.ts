@@ -1,4 +1,5 @@
 import "@matterlabs/hardhat-zksync-deploy";
+import "@matterlabs/hardhat-zksync-upgradable";
 import { task } from "hardhat/config";
 import { TASK_DEPLOY_ZKSYNC } from "@matterlabs/hardhat-zksync-deploy/dist/task-names";
 

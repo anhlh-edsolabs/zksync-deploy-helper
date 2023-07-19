@@ -1,13 +1,17 @@
 import fs from "fs";
 import path from "path";
 import chalk from "chalk";
-import { HelperObject } from "./helperObject";
+import { HelperObject, DeploymentAddresses } from "./helperObject";
 import { utils } from "ethers";
+import { Provider } from "zksync-web3";
 
 const { log } = console;
 
 const DATA_ROOTPATH = "./deployments-zk/";
 const DATA_FILE = ".deployment_data.json";
+
+const implSlot =
+	"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 
 interface DeploymentInfo {
 	[envKey: string]: {
@@ -78,10 +82,7 @@ export async function printPreparationInfo(helperObject: HelperObject) {
 
 export async function printDeploymentResult(
 	helperObject: HelperObject,
-	addresses: {
-		proxyDeploymentAddress: string;
-		contractDeploymentAddress: string;
-	}
+	addresses: DeploymentAddresses
 ): Promise<void> {
 	log("====================================================");
 	if (helperObject.isUpgradeable) {
@@ -89,7 +90,7 @@ export async function printDeploymentResult(
 			`${chalk.bold.blue(
 				helperObject.contractName
 			)} proxy address: ${chalk.bold.magenta(
-				addresses.proxyDeploymentAddress
+				addresses.proxy ?? ""
 			)}\n\r`
 		);
 	}
@@ -97,7 +98,7 @@ export async function printDeploymentResult(
 		`${chalk.bold.blue(
 			helperObject.contractName
 		)} implementation address: ${chalk.bold.yellow(
-			addresses.contractDeploymentAddress
+			addresses.implementation
 		)}\n\r`
 	);
 	log("====================================================");
@@ -114,10 +115,7 @@ export async function printDeploymentResult(
 
 export async function writeDeploymentResult(
 	helperObject: HelperObject,
-	addresses: {
-		proxyDeploymentAddress: string;
-		contractDeploymentAddress: string;
-	}
+	addresses: DeploymentAddresses
 ): Promise<void> {
 	deploymentInfo[helperObject.envKey] =
 		deploymentInfo[helperObject.envKey] !== undefined
@@ -128,9 +126,9 @@ export async function writeDeploymentResult(
 		ChainID: (await helperObject.zkDeployer.zkWallet.provider.getNetwork())
 			.chainId,
 		Proxy: helperObject.isUpgradeable
-			? addresses.proxyDeploymentAddress
+			? addresses.proxy ?? ""
 			: null,
-		Impl: addresses.contractDeploymentAddress,
+		Impl: addresses.implementation,
 		InitializationArgs: helperObject.initializationArgs,
 	};
 
@@ -143,4 +141,12 @@ export async function writeDeploymentResult(
 	} catch (err) {
 		log(`Error when trying to write to ${dataFilePath}!\n\r`, err);
 	}
+}
+
+export async function getImplementationAddress(
+	provider: Provider,
+	proxyAddress: string
+): Promise<string> {
+	const impl = await provider.getStorageAt(proxyAddress, implSlot);
+	return utils.defaultAbiCoder.decode(["address"], impl)[0];
 }
