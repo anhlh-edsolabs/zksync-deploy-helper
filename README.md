@@ -6,9 +6,13 @@ The purpose of this plugin is to simplify the smart contract deployment on `zkSy
 
 ## Breaking changes
 
+### v2.1.0
+
+- Add support for Upgradeable contracts using **UUPS proxy** deployment, using `@matterlabs/hardhat-zksync-upgradable`
+
 ### v2.0.0
 
-- Project is now converted into **Typescript**
+- Project is now converted into **Typescript**.
 - Add `overrides` parameter to HelperObject to support transaction parameters overriding.
 - Add `additionalFactoryDeps` parameter to support factory deployments.
 
@@ -78,4 +82,32 @@ module.exports = async () => {
 
     await helper.deploy();
 };
+```
+
+### 3. Deploy upgradeable contract
+
+Set the `options` parameter `isUpgradeable` to `true` to deploy the contract as UUPS proxy.
+
+```Javascript
+require("dotenv").config();
+const { DeployHelper } = require("zksync-deploy-helper");
+
+module.exports = async () => {
+    const ENV_KEY = process.env.DEPLOYMENT_ENV;
+    const SIGNER_PK = process.env.ZKSYNC_DEPLOYER_PK;
+    const CONTRACT_NAME = "DummyUpgradeable";
+
+    const helper = new DeployHelper(
+        ENV_KEY,
+        hre,
+        CONTRACT_NAME,
+        SIGNER_PK,
+        {
+            isUpgradeable: true
+        }
+    );
+
+    await helper.deploy();
+};
+
 ```
