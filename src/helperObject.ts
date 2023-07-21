@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { HardhatUpgrades } from '@matterlabs/hardhat-zksync-upgradable/src/interfaces';
+import { HardhatRuntimeEnvironment, HttpNetworkConfig } from "hardhat/types";
+import { HardhatUpgrades } from "@matterlabs/hardhat-zksync-upgradable/src/interfaces";
 import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
 import * as zk from "zksync-web3";
 
@@ -9,19 +9,18 @@ export interface DeploymentAddresses {
 	implementation: string;
 }
 export interface HelperObjectOptions {
-	initializationArgs?: any[];
+	initializationArgs?: (string | Uint8Array)[];
 	isUpgradeable?: boolean;
-	proxyName?: string;
 	overrides?: ethers.Overrides;
 	additionalFactoryDeps?: ethers.BytesLike[];
 }
 
 export class HelperObject {
 	envKey: string;
+	hre: HardhatRuntimeEnvironment;
 	contractName: string;
 	initializationArgs: (string | Uint8Array)[];
 	isUpgradeable: boolean;
-	proxyName?: string;
 	overrides?: ethers.Overrides;
 	additionalFactoryDeps?: ethers.BytesLike[];
 	zkDeployer: Deployer;
@@ -35,35 +34,34 @@ export class HelperObject {
 		contractName: string,
 		options: HelperObjectOptions = {}
 	) {
-		const {
-			initializationArgs = [],
-			isUpgradeable = false,
-			proxyName = "zkERC1967Proxy",
-			overrides,
-			additionalFactoryDeps,
-		} = options;
+		// const {
+		// 	initializationArgs = [],
+		// 	isUpgradeable = false,
+		// 	overrides,
+		// 	additionalFactoryDeps,
+		// } = options;
 
 		this.envKey = envKey;
+		this.hre = hre;
 		this.contractName = contractName;
-		this.initializationArgs = initializationArgs;
-		this.isUpgradeable = isUpgradeable;
-		this.proxyName = this.isUpgradeable ? proxyName : undefined;
-		this.overrides = overrides;
-		this.additionalFactoryDeps = additionalFactoryDeps;
+		this.initializationArgs = options.initializationArgs ?? [];
+		this.isUpgradeable = options.isUpgradeable ?? false;
+		this.overrides = options.overrides;
+		this.additionalFactoryDeps = options.additionalFactoryDeps;
 
-		const { deployer, wallet } = this.createDeployer(hre, signerPK);
+		const { deployer, wallet } = this.createDeployer(signerPK);
 		this.zkDeployer = deployer;
 		this.zkWallet = wallet;
 		this.zkUpgrader = hre.zkUpgrades;
 	}
 
 	private createDeployer = (
-		hre: HardhatRuntimeEnvironment,
 		signerPk: string
 	) => {
-		const wallet = new zk.Wallet(signerPk);
-		const deployer = new Deployer(hre, wallet);
+		const provider = new zk.Provider((this.hre.network.config as HttpNetworkConfig).url);
+		const wallet = new zk.Wallet(signerPk, provider);
+		const deployer = new Deployer(this.hre, wallet);
 
-		return { deployer, wallet };
+		return { deployer, wallet, provider };
 	};
 }

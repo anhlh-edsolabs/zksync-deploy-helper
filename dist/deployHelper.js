@@ -9,38 +9,19 @@ class DeployHelper {
         this.deploy = async () => {
             await this._printPreparationInfo(this._helperObject);
             /** TODO: use deploy proxy */
-            let contractDeployment;
+            const contractDeployment = await (0, deploy_1.deployContract)(this._helperObject);
             let deploymentAddresses;
             if (this._helperObject.isUpgradeable) {
-                contractDeployment = await (0, deploy_1.deployContract)(this._helperObject, this._helperObject.initializationArgs, true);
                 deploymentAddresses = {
                     proxy: contractDeployment.address,
                     implementation: await (0, utils_1.getImplementationAddress)(this._helperObject.zkWallet.provider, contractDeployment.address),
                 };
             }
             else {
-                contractDeployment = await (0, deploy_1.deployContract)(this._helperObject, this._helperObject.initializationArgs);
                 deploymentAddresses = {
                     implementation: contractDeployment.address,
                 };
             }
-            // let contractDeployment = await this._deployImpl();
-            // let addresses = {
-            // 	proxyDeploymentAddress: "",
-            // 	contractDeploymentAddress: contractDeployment.address,
-            // };
-            // if (this._helperObject.isUpgradeable) {
-            // 	// Deploy UUPS proxy
-            // 	const callData = contractDeployment.interface.encodeFunctionData(
-            // 		"initialize",
-            // 		this._helperObject.initializationArgs
-            // 	);
-            // 	const proxyDeployment = await this._deployProxy(
-            // 		contractDeployment.address,
-            // 		callData
-            // 	);
-            // 	addresses.proxyDeploymentAddress = proxyDeployment.address;
-            // }
             await this._printDeploymentResult(this._helperObject, deploymentAddresses);
             // Write the result to deployment data file
             await this._writeDeploymentResult(this._helperObject, deploymentAddresses);

@@ -1,1 +1,1 @@
-declare module 'zksync-deploy-helper';
+declare module "zksync-deploy-helper";

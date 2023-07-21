@@ -28,20 +28,26 @@ const hardhat_zksync_deploy_1 = require("@matterlabs/hardhat-zksync-deploy");
 const zk = __importStar(require("zksync-web3"));
 class HelperObject {
     constructor(envKey, hre, signerPK, contractName, options = {}) {
-        this.createDeployer = (hre, signerPk) => {
-            const wallet = new zk.Wallet(signerPk);
-            const deployer = new hardhat_zksync_deploy_1.Deployer(hre, wallet);
-            return { deployer, wallet };
+        // const {
+        // 	initializationArgs = [],
+        // 	isUpgradeable = false,
+        // 	overrides,
+        // 	additionalFactoryDeps,
+        // } = options;
+        this.createDeployer = (signerPk) => {
+            const provider = new zk.Provider(this.hre.network.config.url);
+            const wallet = new zk.Wallet(signerPk, provider);
+            const deployer = new hardhat_zksync_deploy_1.Deployer(this.hre, wallet);
+            return { deployer, wallet, provider };
         };
-        const { initializationArgs = [], isUpgradeable = false, proxyName = "zkERC1967Proxy", overrides, additionalFactoryDeps, } = options;
         this.envKey = envKey;
+        this.hre = hre;
         this.contractName = contractName;
-        this.initializationArgs = initializationArgs;
-        this.isUpgradeable = isUpgradeable;
-        this.proxyName = this.isUpgradeable ? proxyName : undefined;
-        this.overrides = overrides;
-        this.additionalFactoryDeps = additionalFactoryDeps;
-        const { deployer, wallet } = this.createDeployer(hre, signerPK);
+        this.initializationArgs = options.initializationArgs ?? [];
+        this.isUpgradeable = options.isUpgradeable ?? false;
+        this.overrides = options.overrides;
+        this.additionalFactoryDeps = options.additionalFactoryDeps;
+        const { deployer, wallet } = this.createDeployer(signerPK);
         this.zkDeployer = deployer;
         this.zkWallet = wallet;
         this.zkUpgrader = hre.zkUpgrades;

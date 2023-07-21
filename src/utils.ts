@@ -1,17 +1,25 @@
 import fs from "fs";
 import path from "path";
 import chalk from "chalk";
-import { HelperObject, DeploymentAddresses } from "./helperObject";
-import { utils } from "ethers";
+import assert from "assert";
+import { utils, BigNumber } from "ethers";
 import { Provider } from "zksync-web3";
+import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
+import { ERC1967_PROXY_JSON } from "@matterlabs/hardhat-zksync-upgradable/dist/src/constants";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { HelperObject, DeploymentAddresses } from "./helperObject";
+import { ZkSyncArtifact } from "@matterlabs/hardhat-zksync-deploy/dist/types";
+import { Interface } from "ethers/lib/utils";
 
 const { log } = console;
 
 const DATA_ROOTPATH = "./deployments-zk/";
 const DATA_FILE = ".deployment_data.json";
 
-const implSlot =
+const IMPLEMENTATION_SLOT =
 	"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
+
+const MOCK_IMPL_ADDRESS = "0x039043B8C2Ff2360D755b9a47AdceB78D3e88954";
 
 interface DeploymentInfo {
 	[envKey: string]: {
@@ -19,17 +27,19 @@ interface DeploymentInfo {
 			ChainID: number;
 			Proxy: string | null;
 			Impl: string;
-			InitializationArgs: any[];
+			InitializationArgs: (string | Uint8Array)[];
 		};
 	};
 }
 
-const { dataFilePath, deploymentInfo } = _prepareDataFile();
+interface DeploymentDataStorage {
+	path: string;
+	deployment: DeploymentInfo;
+}
 
-function _prepareDataFile(): {
-	dataFilePath: string;
-	deploymentInfo: DeploymentInfo;
-} {
+const deploymentDataStorage: DeploymentDataStorage = _prepareDataFile();
+
+function _prepareDataFile(): DeploymentDataStorage {
 	try {
 		// Check if the directory exists
 		fs.mkdirSync(DATA_ROOTPATH, { recursive: true });
@@ -57,7 +67,7 @@ function _prepareDataFile(): {
 		deploymentInfo = {};
 	}
 
-	return { dataFilePath, deploymentInfo };
+	return { path: dataFilePath, deployment: deploymentInfo };
 }
 
 export async function printPreparationInfo(helperObject: HelperObject) {
@@ -89,9 +99,7 @@ export async function printDeploymentResult(
 		log(
 			`${chalk.bold.blue(
 				helperObject.contractName
-			)} proxy address: ${chalk.bold.magenta(
-				addresses.proxy ?? ""
-			)}\n\r`
+			)} proxy address: ${chalk.bold.magenta(addresses.proxy ?? "")}\n\r`
 		);
 	}
 	log(
@@ -117,29 +125,34 @@ export async function writeDeploymentResult(
 	helperObject: HelperObject,
 	addresses: DeploymentAddresses
 ): Promise<void> {
-	deploymentInfo[helperObject.envKey] =
-		deploymentInfo[helperObject.envKey] !== undefined
-			? deploymentInfo[helperObject.envKey]
+	deploymentDataStorage.deployment[helperObject.envKey] =
+		deploymentDataStorage.deployment[helperObject.envKey] !== undefined
+			? deploymentDataStorage.deployment[helperObject.envKey]
 			: {};
 
-	deploymentInfo[helperObject.envKey][helperObject.contractName] = {
+	deploymentDataStorage.deployment[helperObject.envKey][
+		helperObject.contractName
+	] = {
 		ChainID: (await helperObject.zkDeployer.zkWallet.provider.getNetwork())
 			.chainId,
-		Proxy: helperObject.isUpgradeable
-			? addresses.proxy ?? ""
-			: null,
+		Proxy: helperObject.isUpgradeable ? addresses.proxy ?? "" : null,
 		Impl: addresses.implementation,
 		InitializationArgs: helperObject.initializationArgs,
 	};
 
 	try {
 		await fs.promises.writeFile(
-			dataFilePath,
-			JSON.stringify(deploymentInfo, null, "\t")
+			deploymentDataStorage.path,
+			JSON.stringify(deploymentDataStorage.deployment, null, "\t")
 		);
-		log(`Information has been written to ${dataFilePath}!\n\r`);
+		log(
+			`Information has been written to ${deploymentDataStorage.path}!\n\r`
+		);
 	} catch (err) {
-		log(`Error when trying to write to ${dataFilePath}!\n\r`, err);
+		log(
+			`Error when trying to write to ${deploymentDataStorage.path}!\n\r`,
+			err
+		);
 	}
 }
 
@@ -147,6 +160,36 @@ export async function getImplementationAddress(
 	provider: Provider,
 	proxyAddress: string
 ): Promise<string> {
-	const impl = await provider.getStorageAt(proxyAddress, implSlot);
+	const impl = await provider.getStorageAt(proxyAddress, IMPLEMENTATION_SLOT);
 	return utils.defaultAbiCoder.decode(["address"], impl)[0];
+}
+
+export async function estimateGasUUPS(
+	hre: HardhatRuntimeEnvironment,
+	deployer: Deployer,
+	artifact: ZkSyncArtifact,
+	initializationArgs: (string | Uint8Array)[] | []
+): Promise<BigNumber> {
+	const ERC1967ProxyPath = (await hre.artifacts.getArtifactPaths()).find(
+		(x) => x.includes(path.sep + ERC1967_PROXY_JSON)
+	);
+	assert(ERC1967ProxyPath, "ERC1967Proxy artifact not found");
+	const proxyContract = await import(ERC1967ProxyPath);
+
+	// estimate impl deployment gas
+	const implGasCost = await deployer.estimateDeployFee(artifact, []);
+
+	const contractInterface = new Interface(artifact.abi);
+	const callData = contractInterface.encodeFunctionData(
+		"initialize",
+		initializationArgs
+	);
+
+	const uupsGasCost = await deployer.estimateDeployFee(proxyContract, [
+		MOCK_IMPL_ADDRESS,
+		callData,
+	]);
+
+	const totalGasCost = implGasCost.add(uupsGasCost);
+	return totalGasCost;
 }

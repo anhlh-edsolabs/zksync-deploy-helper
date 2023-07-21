@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { HardhatUpgrades } from '@matterlabs/hardhat-zksync-upgradable/src/interfaces';
+import { HardhatUpgrades } from "@matterlabs/hardhat-zksync-upgradable/src/interfaces";
 import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
 import * as zk from "zksync-web3";
 export interface DeploymentAddresses {
@@ -8,18 +8,17 @@ export interface DeploymentAddresses {
     implementation: string;
 }
 export interface HelperObjectOptions {
-    initializationArgs?: any[];
+    initializationArgs?: (string | Uint8Array)[];
     isUpgradeable?: boolean;
-    proxyName?: string;
     overrides?: ethers.Overrides;
     additionalFactoryDeps?: ethers.BytesLike[];
 }
 export declare class HelperObject {
     envKey: string;
+    hre: HardhatRuntimeEnvironment;
     contractName: string;
     initializationArgs: (string | Uint8Array)[];
     isUpgradeable: boolean;
-    proxyName?: string;
     overrides?: ethers.Overrides;
     additionalFactoryDeps?: ethers.BytesLike[];
     zkDeployer: Deployer;
