@@ -34,12 +34,13 @@ const chalk_1 = __importDefault(require("chalk"));
 const assert_1 = __importDefault(require("assert"));
 const ethers_1 = require("ethers");
 const constants_1 = require("@matterlabs/hardhat-zksync-upgradable/dist/src/constants");
-const utils_1 = require("ethers/lib/utils");
-const { log } = console;
+const utils_general_1 = require("@matterlabs/hardhat-zksync-upgradable/dist/src/utils/utils-general");
+const console_1 = require("console");
 const DATA_ROOTPATH = "./deployments-zk/";
 const DATA_FILE = ".deployment_data.json";
 const IMPLEMENTATION_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
-const MOCK_IMPL_ADDRESS = "0x039043B8C2Ff2360D755b9a47AdceB78D3e88954";
+// Make sure to deploy a ERC1967Proxy contract to a deterministic address on all networks
+const MOCK_IMPL_ADDRESS = "0xa2b21D60f1B65BAC46604a17d91Ddd6FE5813F7f";
 const deploymentDataStorage = _prepareDataFile();
 function _prepareDataFile() {
     try {
@@ -52,7 +53,7 @@ function _prepareDataFile() {
     const dataFilePath = path_1.default.join(DATA_ROOTPATH, DATA_FILE);
     const dataFileAbsPath = path_1.default.resolve(dataFilePath);
     if (!fs_1.default.existsSync(dataFilePath)) {
-        log(`${dataFilePath} not found, creating file...`);
+        (0, console_1.log)(`${dataFilePath} not found, creating file...`);
         fs_1.default.writeFileSync(dataFilePath, JSON.stringify({}));
     }
     let deploymentInfo;
@@ -61,28 +62,28 @@ function _prepareDataFile() {
     }
     catch (error) {
         // Handle the error
-        log(`Error importing deployment info from ${dataFilePath}: ${error.message}`);
+        (0, console_1.log)(`Error importing deployment info from ${dataFilePath}: ${error.message}`);
         // Initialize an empty object as deploymentInfo
         deploymentInfo = {};
     }
     return { path: dataFilePath, deployment: deploymentInfo };
 }
 async function printPreparationInfo(helperObject) {
-    log("====================================================");
-    log(`Start time: ${chalk_1.default.bold.cyanBright(new Date(Date.now()).toString())}`);
-    log(`Deploying contracts with the account: ${chalk_1.default.bold.yellowBright(helperObject.zkWallet.address)}`);
-    log(`Account balance: ${chalk_1.default.bold.yellowBright(ethers_1.utils.formatEther((await helperObject.zkDeployer.zkWallet.getBalance()).toString()))}`);
-    log("====================================================\n\r");
+    (0, console_1.log)("====================================================");
+    (0, console_1.log)(`Start time: ${chalk_1.default.bold.cyanBright(new Date(Date.now()).toString())}`);
+    (0, console_1.log)(`Deploying contracts with the account: ${chalk_1.default.bold.yellowBright(helperObject.zkWallet.address)}`);
+    (0, console_1.log)(`Account balance: ${chalk_1.default.bold.yellowBright(ethers_1.utils.formatEther((await helperObject.zkDeployer.zkWallet.getBalance()).toString()))}`);
+    (0, console_1.log)("====================================================\n\r");
 }
 exports.printPreparationInfo = printPreparationInfo;
 async function printDeploymentResult(helperObject, addresses) {
-    log("====================================================");
+    (0, console_1.log)("====================================================");
     if (helperObject.isUpgradeable) {
-        log(`${chalk_1.default.bold.blue(helperObject.contractName)} proxy address: ${chalk_1.default.bold.magenta(addresses.proxy ?? "")}\n\r`);
+        (0, console_1.log)(`${chalk_1.default.bold.blue(helperObject.contractName)} proxy address: ${chalk_1.default.bold.magenta(addresses.proxy ?? "")}\n\r`);
     }
-    log(`${chalk_1.default.bold.blue(helperObject.contractName)} implementation address: ${chalk_1.default.bold.yellow(addresses.implementation)}\n\r`);
-    log("====================================================");
-    log("Completed.\n\rAccount balance after deployment: ", chalk_1.default.bold.yellowBright(ethers_1.utils.formatEther((await helperObject.zkDeployer.zkWallet.getBalance()).toString())));
+    (0, console_1.log)(`${chalk_1.default.bold.blue(helperObject.contractName)} implementation address: ${chalk_1.default.bold.yellow(addresses.implementation)}\n\r`);
+    (0, console_1.log)("====================================================");
+    (0, console_1.log)("Completed.\n\rAccount balance after deployment: ", chalk_1.default.bold.yellowBright(ethers_1.utils.formatEther((await helperObject.zkDeployer.zkWallet.getBalance()).toString())));
 }
 exports.printDeploymentResult = printDeploymentResult;
 async function writeDeploymentResult(helperObject, addresses) {
@@ -99,10 +100,10 @@ async function writeDeploymentResult(helperObject, addresses) {
     };
     try {
         await fs_1.default.promises.writeFile(deploymentDataStorage.path, JSON.stringify(deploymentDataStorage.deployment, null, "\t"));
-        log(`Information has been written to ${deploymentDataStorage.path}!\n\r`);
+        (0, console_1.log)(`Information has been written to ${deploymentDataStorage.path}!\n\r`);
     }
     catch (err) {
-        log(`Error when trying to write to ${deploymentDataStorage.path}!\n\r`, err);
+        (0, console_1.log)(`Error when trying to write to ${deploymentDataStorage.path}!\n\r`, err);
     }
 }
 exports.writeDeploymentResult = writeDeploymentResult;
@@ -111,14 +112,13 @@ async function getImplementationAddress(provider, proxyAddress) {
     return ethers_1.utils.defaultAbiCoder.decode(["address"], impl)[0];
 }
 exports.getImplementationAddress = getImplementationAddress;
-async function estimateGasUUPS(hre, deployer, artifact, initializationArgs) {
+async function estimateGasUUPS(hre, deployer, artifact, args) {
     const ERC1967ProxyPath = (await hre.artifacts.getArtifactPaths()).find((x) => x.includes(path_1.default.sep + constants_1.ERC1967_PROXY_JSON));
     (0, assert_1.default)(ERC1967ProxyPath, "ERC1967Proxy artifact not found");
     const proxyContract = await (_a = ERC1967ProxyPath, Promise.resolve().then(() => __importStar(require(_a))));
     // estimate impl deployment gas
     const implGasCost = await deployer.estimateDeployFee(artifact, []);
-    const contractInterface = new utils_1.Interface(artifact.abi);
-    const callData = contractInterface.encodeFunctionData("initialize", initializationArgs);
+    const callData = (0, utils_general_1.getInitializerData)(ethers_1.Contract.getInterface(proxyContract.abi), args, false);
     const uupsGasCost = await deployer.estimateDeployFee(proxyContract, [
         MOCK_IMPL_ADDRESS,
         callData,

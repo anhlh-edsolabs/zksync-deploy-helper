@@ -8,5 +8,5 @@ export declare function printPreparationInfo(helperObject: HelperObject): Promis
 export declare function printDeploymentResult(helperObject: HelperObject, addresses: DeploymentAddresses): Promise<void>;
 export declare function writeDeploymentResult(helperObject: HelperObject, addresses: DeploymentAddresses): Promise<void>;
 export declare function getImplementationAddress(provider: Provider, proxyAddress: string): Promise<string>;
-export declare function estimateGasUUPS(hre: HardhatRuntimeEnvironment, deployer: Deployer, artifact: ZkSyncArtifact, initializationArgs: (string | Uint8Array)[] | []): Promise<BigNumber>;
+export declare function estimateGasUUPS(hre: HardhatRuntimeEnvironment, deployer: Deployer, artifact: ZkSyncArtifact, args: unknown[]): Promise<BigNumber>;
 //# sourceMappingURL=utils.d.ts.map

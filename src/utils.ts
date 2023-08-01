@@ -2,16 +2,15 @@ import fs from "fs";
 import path from "path";
 import chalk from "chalk";
 import assert from "assert";
-import { utils, BigNumber } from "ethers";
+import { utils, BigNumber, Contract } from "ethers";
 import { Provider } from "zksync-web3";
 import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
 import { ERC1967_PROXY_JSON } from "@matterlabs/hardhat-zksync-upgradable/dist/src/constants";
+import { getInitializerData } from "@matterlabs/hardhat-zksync-upgradable/dist/src/utils/utils-general";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { HelperObject, DeploymentAddresses } from "./helperObject";
 import { ZkSyncArtifact } from "@matterlabs/hardhat-zksync-deploy/dist/types";
-import { Interface } from "ethers/lib/utils";
-
-const { log } = console;
+import { log } from "console";
 
 const DATA_ROOTPATH = "./deployments-zk/";
 const DATA_FILE = ".deployment_data.json";
@@ -19,7 +18,8 @@ const DATA_FILE = ".deployment_data.json";
 const IMPLEMENTATION_SLOT =
 	"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 
-const MOCK_IMPL_ADDRESS = "0x039043B8C2Ff2360D755b9a47AdceB78D3e88954";
+// Make sure to deploy a ERC1967Proxy contract to a deterministic address on all networks
+const MOCK_IMPL_ADDRESS = "0xa2b21D60f1B65BAC46604a17d91Ddd6FE5813F7f";
 
 interface DeploymentInfo {
 	[envKey: string]: {
@@ -61,7 +61,7 @@ function _prepareDataFile(): DeploymentDataStorage {
 	} catch (error: any) {
 		// Handle the error
 		log(
-			`Error importing deployment info from ${dataFilePath}: ${error.message}`
+			`Error importing deployment info from ${dataFilePath}: ${error.message}`,
 		);
 		// Initialize an empty object as deploymentInfo
 		deploymentInfo = {};
@@ -73,41 +73,43 @@ function _prepareDataFile(): DeploymentDataStorage {
 export async function printPreparationInfo(helperObject: HelperObject) {
 	log("====================================================");
 	log(
-		`Start time: ${chalk.bold.cyanBright(new Date(Date.now()).toString())}`
+		`Start time: ${chalk.bold.cyanBright(new Date(Date.now()).toString())}`,
 	);
 	log(
 		`Deploying contracts with the account: ${chalk.bold.yellowBright(
-			helperObject.zkWallet.address
-		)}`
+			helperObject.zkWallet.address,
+		)}`,
 	);
 	log(
 		`Account balance: ${chalk.bold.yellowBright(
 			utils.formatEther(
-				(await helperObject.zkDeployer.zkWallet.getBalance()).toString()
-			)
-		)}`
+				(
+					await helperObject.zkDeployer.zkWallet.getBalance()
+				).toString(),
+			),
+		)}`,
 	);
 	log("====================================================\n\r");
 }
 
 export async function printDeploymentResult(
 	helperObject: HelperObject,
-	addresses: DeploymentAddresses
+	addresses: DeploymentAddresses,
 ): Promise<void> {
 	log("====================================================");
 	if (helperObject.isUpgradeable) {
 		log(
 			`${chalk.bold.blue(
-				helperObject.contractName
-			)} proxy address: ${chalk.bold.magenta(addresses.proxy ?? "")}\n\r`
+				helperObject.contractName,
+			)} proxy address: ${chalk.bold.magenta(addresses.proxy ?? "")}\n\r`,
 		);
 	}
 	log(
 		`${chalk.bold.blue(
-			helperObject.contractName
+			helperObject.contractName,
 		)} implementation address: ${chalk.bold.yellow(
-			addresses.implementation
-		)}\n\r`
+			addresses.implementation,
+		)}\n\r`,
 	);
 	log("====================================================");
 
@@ -115,15 +117,17 @@ export async function printDeploymentResult(
 		"Completed.\n\rAccount balance after deployment: ",
 		chalk.bold.yellowBright(
 			utils.formatEther(
-				(await helperObject.zkDeployer.zkWallet.getBalance()).toString()
-			)
-		)
+				(
+					await helperObject.zkDeployer.zkWallet.getBalance()
+				).toString(),
+			),
+		),
 	);
 }
 
 export async function writeDeploymentResult(
 	helperObject: HelperObject,
-	addresses: DeploymentAddresses
+	addresses: DeploymentAddresses,
 ): Promise<void> {
 	deploymentDataStorage.deployment[helperObject.envKey] =
 		deploymentDataStorage.deployment[helperObject.envKey] !== undefined
@@ -143,22 +147,22 @@ export async function writeDeploymentResult(
 	try {
 		await fs.promises.writeFile(
 			deploymentDataStorage.path,
-			JSON.stringify(deploymentDataStorage.deployment, null, "\t")
+			JSON.stringify(deploymentDataStorage.deployment, null, "\t"),
 		);
 		log(
-			`Information has been written to ${deploymentDataStorage.path}!\n\r`
+			`Information has been written to ${deploymentDataStorage.path}!\n\r`,
 		);
 	} catch (err) {
 		log(
 			`Error when trying to write to ${deploymentDataStorage.path}!\n\r`,
-			err
+			err,
 		);
 	}
 }
 
 export async function getImplementationAddress(
 	provider: Provider,
-	proxyAddress: string
+	proxyAddress: string,
 ): Promise<string> {
 	const impl = await provider.getStorageAt(proxyAddress, IMPLEMENTATION_SLOT);
 	return utils.defaultAbiCoder.decode(["address"], impl)[0];
@@ -168,10 +172,10 @@ export async function estimateGasUUPS(
 	hre: HardhatRuntimeEnvironment,
 	deployer: Deployer,
 	artifact: ZkSyncArtifact,
-	initializationArgs: (string | Uint8Array)[] | []
+	args: unknown[],
 ): Promise<BigNumber> {
 	const ERC1967ProxyPath = (await hre.artifacts.getArtifactPaths()).find(
-		(x) => x.includes(path.sep + ERC1967_PROXY_JSON)
+		(x) => x.includes(path.sep + ERC1967_PROXY_JSON),
 	);
 	assert(ERC1967ProxyPath, "ERC1967Proxy artifact not found");
 	const proxyContract = await import(ERC1967ProxyPath);
@@ -179,10 +183,10 @@ export async function estimateGasUUPS(
 	// estimate impl deployment gas
 	const implGasCost = await deployer.estimateDeployFee(artifact, []);
 
-	const contractInterface = new Interface(artifact.abi);
-	const callData = contractInterface.encodeFunctionData(
-		"initialize",
-		initializationArgs
+	const callData = getInitializerData(
+		Contract.getInterface(proxyContract.abi),
+		args,
+		false,
 	);
 
 	const uupsGasCost = await deployer.estimateDeployFee(proxyContract, [

@@ -16,6 +16,7 @@
     "prettier": "prettier 'src/**/*.ts'",
     "test": "echo \"No test script is defined\" && exit 1",
     "build": "tsc --build .",
+    "buildx": "yarn add -D @openzeppelin/upgrades-core@1.20.6 && yarn build && yarn add -D @openzeppelin/upgrades-core@1.27.3",
     "clean": "rimraf dist"
   },
   "files": [
