@@ -21,14 +21,15 @@ const IMPLEMENTATION_SLOT =
 // Make sure to deploy a ERC1967Proxy contract to a deterministic address on all networks
 const MOCK_IMPL_ADDRESS = "0xa2b21D60f1B65BAC46604a17d91Ddd6FE5813F7f";
 
+export interface ContractDeployment {
+	ChainID: number;
+	Proxy: string | null;
+	Impl: string;
+	InitializationArgs: (string | Uint8Array)[];
+}
 interface DeploymentInfo {
 	[envKey: string]: {
-		[contractName: string]: {
-			ChainID: number;
-			Proxy: string | null;
-			Impl: string;
-			InitializationArgs: (string | Uint8Array)[];
-		};
+		[contractName: string]: ContractDeployment;
 	};
 }
 
@@ -38,6 +39,8 @@ interface DeploymentDataStorage {
 }
 
 const deploymentDataStorage: DeploymentDataStorage = _prepareDataFile();
+
+export const deploymentData: DeploymentInfo = deploymentDataStorage.deployment;
 
 function _prepareDataFile(): DeploymentDataStorage {
 	try {
@@ -76,7 +79,29 @@ export async function printPreparationInfo(helperObject: HelperObject) {
 		`Start time: ${chalk.bold.cyanBright(new Date(Date.now()).toString())}`,
 	);
 	log(
-		`Deploying contracts with the account: ${chalk.bold.yellowBright(
+		`Deploying contract with the account: ${chalk.bold.yellowBright(
+			helperObject.zkWallet.address,
+		)}`,
+	);
+	log(
+		`Account balance: ${chalk.bold.yellowBright(
+			utils.formatEther(
+				(
+					await helperObject.zkDeployer.zkWallet.getBalance()
+				).toString(),
+			),
+		)}`,
+	);
+	log("====================================================\n\r");
+}
+
+export async function printUpgradePreparationInfo(helperObject: HelperObject) {
+	log("====================================================");
+	log(
+		`Start time: ${chalk.bold.cyanBright(new Date(Date.now()).toString())}`,
+	);
+	log(
+		`Upgrading contract with the account: ${chalk.bold.yellowBright(
 			helperObject.zkWallet.address,
 		)}`,
 	);
@@ -96,20 +121,50 @@ export async function printDeploymentResult(
 	helperObject: HelperObject,
 	addresses: DeploymentAddresses,
 ): Promise<void> {
-	log("====================================================");
+	// log("====================================================");
 	if (helperObject.isUpgradeable) {
 		log(
-			`${chalk.bold.blue(
+			`\t - ${chalk.bold.blue(
 				helperObject.contractName,
-			)} proxy address: ${chalk.bold.magenta(addresses.proxy ?? "")}\n\r`,
+			)} proxy address: ${chalk.bold.magenta(addresses.proxy ?? "")}`,
 		);
 	}
 	log(
-		`${chalk.bold.blue(
+		`\t - ${chalk.bold.blue(
 			helperObject.contractName,
 		)} implementation address: ${chalk.bold.yellow(
 			addresses.implementation,
-		)}\n\r`,
+		)}`,
+	);
+	log("====================================================");
+
+	log(
+		"Completed.\n\rAccount balance after deployment: ",
+		chalk.bold.yellowBright(
+			utils.formatEther(
+				(
+					await helperObject.zkDeployer.zkWallet.getBalance()
+				).toString(),
+			),
+		),
+	);
+}
+
+export async function printProxyUpgradeResult(
+	helperObject: HelperObject,
+	addresses: DeploymentAddresses,
+): Promise<void> {
+	log(
+		`\t - ${chalk.bold.blue(
+			helperObject.contractName,
+		)} proxy address: ${chalk.bold.magenta(addresses.proxy ?? "")}`,
+	);
+	log(
+		`\t - ${chalk.bold.blue(
+			helperObject.contractName,
+		)} implementation address: ${chalk.bold.yellow(
+			addresses.implementation,
+		)}`,
 	);
 	log("====================================================");
 
@@ -134,15 +189,24 @@ export async function writeDeploymentResult(
 			? deploymentDataStorage.deployment[helperObject.envKey]
 			: {};
 
-	deploymentDataStorage.deployment[helperObject.envKey][
-		helperObject.contractName
-	] = {
-		ChainID: (await helperObject.zkDeployer.zkWallet.provider.getNetwork())
-			.chainId,
-		Proxy: helperObject.isUpgradeable ? addresses.proxy ?? "" : null,
-		Impl: addresses.implementation,
-		InitializationArgs: helperObject.initializationArgs,
-	};
+	if (helperObject.isProxyUpgrade) {
+		deploymentDataStorage.deployment[helperObject.envKey][
+			helperObject.contractName
+		].Impl = addresses.implementation;
+	} else {
+		deploymentDataStorage.deployment[helperObject.envKey][
+			helperObject.contractName
+		] = {
+			ChainID: (
+				await helperObject.zkDeployer.zkWallet.provider.getNetwork()
+			).chainId,
+			Proxy: helperObject.isUpgradeable ? addresses.proxy ?? "" : null,
+			Impl: addresses.implementation,
+			InitializationArgs: helperObject.initializationArgs,
+		};
+	}
+
+	// Add flag for upgrade
 
 	try {
 		await fs.promises.writeFile(

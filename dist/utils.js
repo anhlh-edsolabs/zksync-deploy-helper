@@ -27,7 +27,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.estimateGasUUPS = exports.getImplementationAddress = exports.writeDeploymentResult = exports.printDeploymentResult = exports.printPreparationInfo = void 0;
+exports.estimateGasUUPS = exports.getImplementationAddress = exports.writeDeploymentResult = exports.printProxyUpgradeResult = exports.printDeploymentResult = exports.printUpgradePreparationInfo = exports.printPreparationInfo = exports.deploymentData = void 0;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const chalk_1 = __importDefault(require("chalk"));
@@ -42,6 +42,7 @@ const IMPLEMENTATION_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a92
 // Make sure to deploy a ERC1967Proxy contract to a deterministic address on all networks
 const MOCK_IMPL_ADDRESS = "0xa2b21D60f1B65BAC46604a17d91Ddd6FE5813F7f";
 const deploymentDataStorage = _prepareDataFile();
+exports.deploymentData = deploymentDataStorage.deployment;
 function _prepareDataFile() {
     try {
         // Check if the directory exists
@@ -71,33 +72,53 @@ function _prepareDataFile() {
 async function printPreparationInfo(helperObject) {
     (0, console_1.log)("====================================================");
     (0, console_1.log)(`Start time: ${chalk_1.default.bold.cyanBright(new Date(Date.now()).toString())}`);
-    (0, console_1.log)(`Deploying contracts with the account: ${chalk_1.default.bold.yellowBright(helperObject.zkWallet.address)}`);
+    (0, console_1.log)(`Deploying contract with the account: ${chalk_1.default.bold.yellowBright(helperObject.zkWallet.address)}`);
     (0, console_1.log)(`Account balance: ${chalk_1.default.bold.yellowBright(ethers_1.utils.formatEther((await helperObject.zkDeployer.zkWallet.getBalance()).toString()))}`);
     (0, console_1.log)("====================================================\n\r");
 }
 exports.printPreparationInfo = printPreparationInfo;
-async function printDeploymentResult(helperObject, addresses) {
+async function printUpgradePreparationInfo(helperObject) {
     (0, console_1.log)("====================================================");
+    (0, console_1.log)(`Start time: ${chalk_1.default.bold.cyanBright(new Date(Date.now()).toString())}`);
+    (0, console_1.log)(`Upgrading contract with the account: ${chalk_1.default.bold.yellowBright(helperObject.zkWallet.address)}`);
+    (0, console_1.log)(`Account balance: ${chalk_1.default.bold.yellowBright(ethers_1.utils.formatEther((await helperObject.zkDeployer.zkWallet.getBalance()).toString()))}`);
+    (0, console_1.log)("====================================================\n\r");
+}
+exports.printUpgradePreparationInfo = printUpgradePreparationInfo;
+async function printDeploymentResult(helperObject, addresses) {
+    // log("====================================================");
     if (helperObject.isUpgradeable) {
-        (0, console_1.log)(`${chalk_1.default.bold.blue(helperObject.contractName)} proxy address: ${chalk_1.default.bold.magenta(addresses.proxy ?? "")}\n\r`);
+        (0, console_1.log)(`\t - ${chalk_1.default.bold.blue(helperObject.contractName)} proxy address: ${chalk_1.default.bold.magenta(addresses.proxy ?? "")}`);
     }
-    (0, console_1.log)(`${chalk_1.default.bold.blue(helperObject.contractName)} implementation address: ${chalk_1.default.bold.yellow(addresses.implementation)}\n\r`);
+    (0, console_1.log)(`\t - ${chalk_1.default.bold.blue(helperObject.contractName)} implementation address: ${chalk_1.default.bold.yellow(addresses.implementation)}`);
     (0, console_1.log)("====================================================");
     (0, console_1.log)("Completed.\n\rAccount balance after deployment: ", chalk_1.default.bold.yellowBright(ethers_1.utils.formatEther((await helperObject.zkDeployer.zkWallet.getBalance()).toString())));
 }
 exports.printDeploymentResult = printDeploymentResult;
+async function printProxyUpgradeResult(helperObject, addresses) {
+    (0, console_1.log)(`\t - ${chalk_1.default.bold.blue(helperObject.contractName)} proxy address: ${chalk_1.default.bold.magenta(addresses.proxy ?? "")}`);
+    (0, console_1.log)(`\t - ${chalk_1.default.bold.blue(helperObject.contractName)} implementation address: ${chalk_1.default.bold.yellow(addresses.implementation)}`);
+    (0, console_1.log)("====================================================");
+    (0, console_1.log)("Completed.\n\rAccount balance after deployment: ", chalk_1.default.bold.yellowBright(ethers_1.utils.formatEther((await helperObject.zkDeployer.zkWallet.getBalance()).toString())));
+}
+exports.printProxyUpgradeResult = printProxyUpgradeResult;
 async function writeDeploymentResult(helperObject, addresses) {
     deploymentDataStorage.deployment[helperObject.envKey] =
         deploymentDataStorage.deployment[helperObject.envKey] !== undefined
             ? deploymentDataStorage.deployment[helperObject.envKey]
             : {};
-    deploymentDataStorage.deployment[helperObject.envKey][helperObject.contractName] = {
-        ChainID: (await helperObject.zkDeployer.zkWallet.provider.getNetwork())
-            .chainId,
-        Proxy: helperObject.isUpgradeable ? addresses.proxy ?? "" : null,
-        Impl: addresses.implementation,
-        InitializationArgs: helperObject.initializationArgs,
-    };
+    if (helperObject.isProxyUpgrade) {
+        deploymentDataStorage.deployment[helperObject.envKey][helperObject.contractName].Impl = addresses.implementation;
+    }
+    else {
+        deploymentDataStorage.deployment[helperObject.envKey][helperObject.contractName] = {
+            ChainID: (await helperObject.zkDeployer.zkWallet.provider.getNetwork()).chainId,
+            Proxy: helperObject.isUpgradeable ? addresses.proxy ?? "" : null,
+            Impl: addresses.implementation,
+            InitializationArgs: helperObject.initializationArgs,
+        };
+    }
+    // Add flag for upgrade
     try {
         await fs_1.default.promises.writeFile(deploymentDataStorage.path, JSON.stringify(deploymentDataStorage.deployment, null, "\t"));
         (0, console_1.log)(`Information has been written to ${deploymentDataStorage.path}!\n\r`);

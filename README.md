@@ -6,6 +6,10 @@ The purpose of this plugin is to simplify the smart contract deployment on `zkSy
 
 ## Change logs
 
+### v2.1.2
+
+- Add proxy upgrade functionality.
+
 ### v2.1.1
 
 - Add gas estimation for upgradeable contract deployment.
@@ -116,4 +120,21 @@ module.exports = async () => {
     await helper.deploy();
 };
 
+```
+
+### 4. Upgrade proxy contract
+
+```Javascript
+require("dotenv").config();
+const { DeployHelper } = require("zksync-deploy-helper");
+
+module.exports = async () => {
+    const ENV_KEY = process.env.DEPLOYMENT_ENV;
+    const SIGNER_PK = process.env.ZKSYNC_DEPLOYER_PK;
+    const CONTRACT_NAME = "DummyUpgradeable";
+
+    const helper = new DeployHelper(ENV_KEY, hre, CONTRACT_NAME, DEPLOYER_PK);
+
+    await helper.upgrade();
+};
 ```
