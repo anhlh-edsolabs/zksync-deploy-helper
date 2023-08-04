@@ -6,6 +6,10 @@ The purpose of this plugin is to simplify the smart contract deployment on `zkSy
 
 ## Change logs
 
+### v2.1.2
+
+- Add proxy upgrade functionality.
+
 ### v2.1.1
 
 - Add gas estimation for upgradeable contract deployment.
