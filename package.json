@@ -1,6 +1,6 @@
 {
   "name": "zksync-deploy-helper",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Smart contract deployment helper library for hardhat-zksync-deploy",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
