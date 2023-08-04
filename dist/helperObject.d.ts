@@ -19,6 +19,7 @@ export declare class HelperObject {
     contractName: string;
     initializationArgs: (string | Uint8Array)[];
     isUpgradeable: boolean;
+    isProxyUpgrade?: boolean;
     overrides?: ethers.Overrides;
     additionalFactoryDeps?: ethers.BytesLike[];
     zkDeployer: Deployer;

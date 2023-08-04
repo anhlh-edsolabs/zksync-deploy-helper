@@ -61,13 +61,6 @@ export async function deployContract(
 				: chalk.bold.blue(artifact.contractName)
 		} with estimated cost ${chalk.bold.yellowBright(parsedFee)}...`
 	);
-	// log(
-	// 	`Deploying ${
-	// 		helperObject.isUpgradeable
-	// 			? "proxy contract"
-	// 			: chalk.bold.blue(artifact.contractName)
-	// 	}...`,
-	// );
 
 	return await contractDeployment.deployed();
 }

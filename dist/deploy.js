@@ -30,13 +30,6 @@ async function deployContract(helperObject) {
     (0, console_1.log)(`Deploying ${helperObject.isUpgradeable
         ? "proxy contract"
         : chalk_1.default.bold.blue(artifact.contractName)} with estimated cost ${chalk_1.default.bold.yellowBright(parsedFee)}...`);
-    // log(
-    // 	`Deploying ${
-    // 		helperObject.isUpgradeable
-    // 			? "proxy contract"
-    // 			: chalk.bold.blue(artifact.contractName)
-    // 	}...`,
-    // );
     return await contractDeployment.deployed();
 }
 exports.deployContract = deployContract;
