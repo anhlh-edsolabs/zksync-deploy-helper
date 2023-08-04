@@ -15,10 +15,12 @@ async function upgradeProxy(helperObject) {
         .filter((key) => key == helperObject.contractName)
         .map((value) => deployments[value])[0];
     if (contractDeployment !== undefined) {
+        (0, console_1.log)(`${chalk_1.default.bold.blue(helperObject.contractName)} current deployment info:`);
         (0, console_1.log)(contractDeployment);
     }
     (0, console_1.log)(`Upgrading ${chalk_1.default.bold.blue(helperObject.contractName)} proxy contract at: ${chalk_1.default.bold.yellowBright(contractDeployment.Proxy)}...`);
-    return await helperObject.zkUpgrader.upgradeProxy(helperObject.zkWallet, contractDeployment.Proxy, artifact);
+    const upgradedProxy = await helperObject.zkUpgrader.upgradeProxy(helperObject.zkWallet, contractDeployment.Proxy, artifact);
+    return await upgradedProxy.deployed();
 }
 exports.upgradeProxy = upgradeProxy;
 //# sourceMappingURL=upgrade.js.map

@@ -36,8 +36,14 @@ const ethers_1 = require("ethers");
 const constants_1 = require("@matterlabs/hardhat-zksync-upgradable/dist/src/constants");
 const utils_general_1 = require("@matterlabs/hardhat-zksync-upgradable/dist/src/utils/utils-general");
 const console_1 = require("console");
+// export { getImplementationAddress } from "@openzeppelin/upgrades-core/dist/eip-1967";
 const DATA_ROOTPATH = "./deployments-zk/";
 const DATA_FILE = ".deployment_data.json";
+/** Implementation Slot is calculated as follow:
+ * IMPLEMENTATION_SLOT = BigNumber.from(utils.keccak256(Buffer.from('eip1967.proxy.implementation'))).sub(1).toHexString()
+ *
+ * Output value: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+ * */
 const IMPLEMENTATION_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 // Make sure to deploy a ERC1967Proxy contract to a deterministic address on all networks
 const MOCK_IMPL_ADDRESS = "0xa2b21D60f1B65BAC46604a17d91Ddd6FE5813F7f";

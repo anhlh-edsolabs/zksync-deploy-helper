@@ -12,9 +12,16 @@ import { HelperObject, DeploymentAddresses } from "./helperObject";
 import { ZkSyncArtifact } from "@matterlabs/hardhat-zksync-deploy/dist/types";
 import { log } from "console";
 
+// export { getImplementationAddress } from "@openzeppelin/upgrades-core/dist/eip-1967";
+
 const DATA_ROOTPATH = "./deployments-zk/";
 const DATA_FILE = ".deployment_data.json";
 
+/** Implementation Slot is calculated as follow: 
+ * IMPLEMENTATION_SLOT = BigNumber.from(utils.keccak256(Buffer.from('eip1967.proxy.implementation'))).sub(1).toHexString()
+ * 
+ * Output value: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+ * */ 
 const IMPLEMENTATION_SLOT =
 	"0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 

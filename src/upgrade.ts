@@ -19,6 +19,11 @@ export async function upgradeProxy(
 		.map((value) => deployments[value])[0];
 
 	if (contractDeployment !== undefined) {
+		log(
+			`${chalk.bold.blue(
+				helperObject.contractName,
+			)} current deployment info:`,
+		);
 		log(contractDeployment);
 	}
 
@@ -30,9 +35,11 @@ export async function upgradeProxy(
 		)}...`,
 	);
 
-	return await helperObject.zkUpgrader.upgradeProxy(
+	const upgradedProxy = await helperObject.zkUpgrader.upgradeProxy(
 		helperObject.zkWallet,
 		contractDeployment.Proxy as string,
 		artifact,
 	);
+
+	return await upgradedProxy.deployed();
 }
